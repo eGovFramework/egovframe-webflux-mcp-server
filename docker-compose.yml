@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16  # PostgreSQL 16 + PGVector
+    container_name: mcp-server-db
+    environment:
+      POSTGRES_DB: mcpdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - mcpdata:/var/lib/postgresql/data
+      # 초기화 스크립트. vector 확장(pgvector 이미지 기본 제공)과 pg_trgm 확장(하이브리드 lexical 검색용)을 설치한다.
+      # 주의: DB 데이터가 들어 있는 mcpdata 볼륨이 비어 있을 때(처음 만들 때)만 실행된다.
+      # 컨테이너만 지우고 다시 만들면 볼륨이 남아 있어 실행되지 않는다. 기존 DB 에 pg_trgm 이 없으면
+      # docker compose exec postgres psql -U postgres -d mcpdb -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+      # 로 직접 설치한다. docker compose down -v 로 볼륨까지 지우면 다시 실행되지만 적재한 데이터도 함께 지워진다.
+      - ./init-scripts:/docker-entrypoint-initdb.d
+
+volumes:
+  mcpdata:
